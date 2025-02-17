@@ -1,0 +1,14 @@
+spring :
+ mail:
+   host: ${EMAIL_HOST}
+   username: ${EMAIL_ID}
+   password: ${APP_PASSWORD}
+   port: ${EMAIL_PORT}
+   protocol: ${EMAIL_PROTOCOL}
+   test-connection: false
+   properties:
+     mail:
+       smtp:
+         auth: true
+         starttls:
+           enable: true
