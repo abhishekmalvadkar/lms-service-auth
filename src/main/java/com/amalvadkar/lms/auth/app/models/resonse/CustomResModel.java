@@ -29,7 +29,7 @@ public class CustomResModel {
 
     public static CustomResModel fail( String message, HttpStatus httpStatus){
         return builder()
-                .success(true)
+                .success(false)
                 .code(httpStatus.value())
                 .message(message)
                 .build();

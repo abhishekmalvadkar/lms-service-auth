@@ -12,3 +12,12 @@ spring :
          auth: true
          starttls:
            enable: true
+
+server:
+  port: 9091
+
+lms:
+  otpLength: 6
+  jwt-secret: ${JWT_SECRET}
+  jwtExpiryTimeInSec: 3600 # 1 hour
+  email-templates-location: classpath:/email-templates/

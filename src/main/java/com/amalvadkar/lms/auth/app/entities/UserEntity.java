@@ -5,36 +5,47 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Entity
-@Table(name="users")
+@Table(name = "users")
 @Getter
 @Setter
 public class UserEntity extends BaseEntity {
 
     public static final String SPACE = " ";
-    @Column(name="first_name",nullable = false)
+    @Column(name = "first_name", nullable = false)
     private String firstName;
 
-    @Column(name="last_name",nullable = false)
+    @Column(name = "last_name", nullable = false)
     private String lastName;
 
-    @Column(name="email",nullable = false)
+    @Column(name = "email", nullable = false)
     private String email;
 
-    @Column(name = "last_login_time",nullable = false)
+    @Column(name = "last_login_time")
     private Instant lastLoginTime;
 
     @Column(name = "verification_token")
     private String verificationToken;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name="role_id",nullable = false)
-     private RoleEntity role;
+    @Column(name = "otp")
+    private String otp;
 
-    public String fullName(){
+    @Column(name = "otp_expire_time")
+    private Instant opExpireTime;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "role_id", nullable = false)
+    private RoleEntity role;
+
+    public String fullName() {
         return this.firstName + SPACE + this.lastName;
     }
 
-
+    @PrePersist
+    public void prePersistUser() {
+        this.verificationToken = UUID.randomUUID().toString();
+    }
 }
