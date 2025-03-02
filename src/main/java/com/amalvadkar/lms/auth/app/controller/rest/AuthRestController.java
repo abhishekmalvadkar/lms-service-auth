@@ -19,7 +19,7 @@ public class AuthRestController {
     public static final String ENDPOINT_VERIFY_ACCOUNT = "/verify-account";
     public static final String ENDPOINT_SIGN_IN = "/sign-in";
     public static final String ENDPOINT_VERIFY_OTP = "/verify-otp";
-        public static final String ENDPOINT_VERIFY_JWT_TOKEN = "/verify-jwt-token";
+    public static final String ENDPOINT_VERIFY_JWT_TOKEN = "/verify-jwt-token";
 
     private final AuthService authService;
 
@@ -31,24 +31,24 @@ public class AuthRestController {
     }
 
     @PostMapping(ENDPOINT_VERIFY_ACCOUNT)
-    public ResponseEntity<CustomResModel> verifyAccount(@Valid @RequestBody VerifyAccountRequest verifyAccountRequest){
-      return ResponseEntity.ok(authService.verifyAccount(verifyAccountRequest));
+    public ResponseEntity<CustomResModel> verifyAccount(@Valid @RequestBody VerifyAccountRequest verifyAccountRequest) {
+        return ResponseEntity.ok(authService.verifyAccount(verifyAccountRequest));
 
     }
 
     @PostMapping(ENDPOINT_SIGN_IN)
-    public ResponseEntity<CustomResModel> signIn(@Valid @RequestBody SignInRequest signInRequest){
-       return ResponseEntity.ok(this.authService.signIn(signInRequest));
+    public ResponseEntity<CustomResModel> signIn(@Valid @RequestBody SignInRequest signInRequest) {
+        return ResponseEntity.ok(this.authService.signIn(signInRequest));
     }
 
     @PostMapping(ENDPOINT_VERIFY_OTP)
-    public ResponseEntity<CustomResModel> verifySignInOtp(@RequestBody VerifySignInOtpReq verifySignInOtpReq ){
-     return ResponseEntity.ok(this.authService.verifySignInOtp(verifySignInOtpReq));
+    public ResponseEntity<CustomResModel> verifySignInOtp(@RequestBody VerifySignInOtpReq verifySignInOtpReq) {
+        return ResponseEntity.ok(this.authService.verifySignInOtp(verifySignInOtpReq));
 
     }
 
     @PostMapping(ENDPOINT_VERIFY_JWT_TOKEN)
-    public ResponseEntity<CustomResModel> verifyJwtToken(@RequestBody VerifyJwtTokenReq verifyJwtTokenReq){
+    public ResponseEntity<CustomResModel> verifyJwtToken(@RequestBody VerifyJwtTokenReq verifyJwtTokenReq) {
         return ResponseEntity.ok(this.authService.verifyJwtToken(verifyJwtTokenReq.authToken()));
     }
 
