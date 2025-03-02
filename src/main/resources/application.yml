@@ -12,9 +12,17 @@ spring :
          auth: true
          starttls:
            enable: true
+ jpa:
+  open-in-view: false
+ application:
+    name: lms-service-auth
+ thymeleaf:
+   check-template-location: false
 
 server:
   port: 9091
+
+
 
 lms:
   otpLength: 6
