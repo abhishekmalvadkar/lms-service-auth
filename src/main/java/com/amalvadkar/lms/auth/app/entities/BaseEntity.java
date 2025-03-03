@@ -32,17 +32,12 @@ public abstract class BaseEntity {
     @Column(name = "delete_flag", nullable = false)
     private Boolean deleteFlag;
 
-    @Column(name = "active", nullable = false)
-    private Boolean active;
-
     @PrePersist
     public void beforePersist() {
         this.id = UUID.randomUUID().toString();
         this.deleteFlag = Boolean.FALSE;
         this.createdOn = Instant.now();
         this.updatedOn = createdOn;
-        this.active = Boolean.TRUE;
-
     }
 
 }

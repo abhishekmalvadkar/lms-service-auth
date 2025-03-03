@@ -4,11 +4,12 @@ import com.amalvadkar.lms.auth.ApplicationProperties;
 import com.amalvadkar.lms.auth.app.constants.AppConstants;
 import com.amalvadkar.lms.auth.app.entities.UserEntity;
 import com.amalvadkar.lms.auth.app.enums.ErrorMsgEnum;
-import com.amalvadkar.lms.auth.app.exception.AuthException;
+import com.amalvadkar.lms.auth.app.enums.UserStatusEnum;
 import com.amalvadkar.lms.auth.app.exception.EmailNotFoundException;
 import com.amalvadkar.lms.auth.app.exception.OtpExpireException;
 import com.amalvadkar.lms.auth.app.exception.OtpNotValidException;
 import com.amalvadkar.lms.auth.app.generator.OtpGenerator;
+import com.amalvadkar.lms.auth.app.helper.TokenHelper;
 import com.amalvadkar.lms.auth.app.models.SendOtpDto;
 import com.amalvadkar.lms.auth.app.models.request.CreateAccountRequest;
 import com.amalvadkar.lms.auth.app.models.request.SignInRequest;
@@ -19,11 +20,9 @@ import com.amalvadkar.lms.auth.app.repositories.RoleRepo;
 import com.amalvadkar.lms.auth.app.repositories.UserRepo;
 import com.amalvadkar.lms.auth.email.dto.MailDto;
 import com.amalvadkar.lms.auth.email.sender.EmailSender;
-import com.amalvadkar.lms.auth.app.helper.TokenHelper;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -88,7 +87,7 @@ public class AuthService {
 
     private Optional<UserEntity> findUser(VerifyAccountRequest verifyEmailReq) {
         return this.userRepo.findByEmailAndToken(verifyEmailReq.email(),
-                verifyEmailReq.verificationToke());
+                verifyEmailReq.verificationToken());
     }
 
     private CustomResModel prepareVerifyAccountFailResponse() {
@@ -98,7 +97,7 @@ public class AuthService {
 
     private CustomResModel activateAccount(UserEntity userEntity) {
         userEntity.setVerificationToken(null);
-        userEntity.setActive(true);
+        userEntity.setStatus(UserStatusEnum.ACTIVE);
         userRepo.save(userEntity);
         return prepareVerifyAccountSuccessResponse();
     }

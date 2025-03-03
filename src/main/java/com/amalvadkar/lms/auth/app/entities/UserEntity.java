@@ -1,11 +1,11 @@
 package com.amalvadkar.lms.auth.app.entities;
 
+import com.amalvadkar.lms.auth.app.enums.UserStatusEnum;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
@@ -30,6 +30,10 @@ public class UserEntity extends BaseEntity {
     @Column(name = "verification_token")
     private String verificationToken;
 
+    @Column(name = "status" , nullable = false)
+    @Enumerated(EnumType.STRING)
+    private UserStatusEnum status;
+
     @Column(name = "otp")
     private String otp;
 
@@ -47,5 +51,6 @@ public class UserEntity extends BaseEntity {
     @PrePersist
     public void prePersistUser() {
         this.verificationToken = UUID.randomUUID().toString();
+        this.status = UserStatusEnum.LOCKED;
     }
 }
