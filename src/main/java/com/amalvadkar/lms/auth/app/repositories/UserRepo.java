@@ -1,7 +1,7 @@
 package com.amalvadkar.lms.auth.app.repositories;
 
 import com.amalvadkar.lms.auth.app.entities.UserEntity;
-import com.amalvadkar.lms.auth.app.exception.EmailAlreadyExistsException;
+import com.amalvadkar.lms.auth.app.exception.ResourceAlreadyExistsException;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -25,7 +25,7 @@ public interface UserRepo extends JpaRepository<UserEntity, String> {
 
     default void throwIfEmailExists(String email) {
         if (existsByEmail(email)) {
-            throw new EmailAlreadyExistsException();
+            throw new ResourceAlreadyExistsException("Email Already Exist");
         }
     }
 
