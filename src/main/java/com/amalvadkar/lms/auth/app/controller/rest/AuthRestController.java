@@ -21,7 +21,7 @@ public class AuthRestController {
     public static final String ENDPOINT_VERIFY_ACCOUNT = "/verify-account";
     public static final String ENDPOINT_SIGN_IN = "/sign-in";
     public static final String ENDPOINT_VERIFY_OTP = "/verify-otp";
-    public static final String ENDPOINT_VERIFY_JWT_TOKEN = "/verify-jwt-token";
+    public static final String ENDPOINT_VERIFY_JWT_TOKEN = "/verify-token";
 
     private final AuthService authService;
 
