@@ -5,7 +5,7 @@ import org.springframework.http.HttpStatus;
 public class ResourceAlreadyExistsException extends AuthException {
 
     public ResourceAlreadyExistsException(String message) {
-        super(message, HttpStatus.CONFLICT.value());
+        super(message, HttpStatus.CONFLICT);
     }
 
 }

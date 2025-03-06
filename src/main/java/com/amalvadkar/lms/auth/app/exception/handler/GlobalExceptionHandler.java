@@ -14,7 +14,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(ResourceAlreadyExistsException.class)
     public ResponseEntity<CustomResModel> handleResourceAlreadyExistsException(ResourceAlreadyExistsException ex){
-        return ResponseEntity.status(HttpStatus.CONFLICT)
+        return ResponseEntity.status(HttpStatus.valueOf(ex.getCode()))
                 .body(CustomResModel.fail(List.of(ex.getMessage()), ex.getCode()));
     }
 
