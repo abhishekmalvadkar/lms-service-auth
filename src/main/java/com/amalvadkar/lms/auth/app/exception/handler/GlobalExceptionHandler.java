@@ -14,6 +14,8 @@ import java.util.List;
 @Slf4j
 public class GlobalExceptionHandler {
 
+    private static final String EXCEPTION_OCCURRED_MSG = "Exception occurred : ";
+
     @ExceptionHandler(ResourceAlreadyExistsException.class)
     public ResponseEntity<CustomResModel> handleResourceAlreadyExistsException(ResourceAlreadyExistsException ex){
         logException(ex);
@@ -22,7 +24,7 @@ public class GlobalExceptionHandler {
     }
 
     private static void logException(Throwable ex) {
-        log.error("Exception occurred : ", ex);
+        log.error(EXCEPTION_OCCURRED_MSG, ex);
     }
 
 }
