@@ -21,7 +21,7 @@ public class AuthRestController {
     private static final String ENDPOINT_VERIFY_ACCOUNT = "/verify-account";
     private static final String ENDPOINT_SIGN_IN = "/sign-in";
     private static final String ENDPOINT_VERIFY_OTP = "/verify-otp";
-    private static final String ENDPOINT_VERIFY_JWT_TOKEN = "/verify-token";
+    private static final String ENDPOINT_VERIFY_TOKEN = "/verify-token";
 
     private final AuthService authService;
 
@@ -49,7 +49,7 @@ public class AuthRestController {
 
     }
 
-    @PostMapping(ENDPOINT_VERIFY_JWT_TOKEN)
+    @PostMapping(ENDPOINT_VERIFY_TOKEN)
     public ResponseEntity<CustomResModel> verifyJwtToken(@RequestBody VerifyJwtTokenReq verifyJwtTokenReq) {
         return ResponseEntity.ok(this.authService.verifyJwtToken(verifyJwtTokenReq.authToken()));
     }
