@@ -201,7 +201,7 @@ public class AuthService {
     }
 
     private Optional<UserEntity> findUser(VerifyOtpRequest verifyOtpRequest) {
-        return this.userRepo.findByOtpAndEmailAndDeleteFlagFalse(verifyOtpRequest.getOtp(), verifyOtpRequest.getEmail());
+        return this.userRepo.findByOtpAndEmailAndDeleteFlagFalse(verifyOtpRequest.otp(), verifyOtpRequest.email());
     }
 
     public CustomResModel verifyJwtToken(String authToken){
