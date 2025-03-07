@@ -6,16 +6,17 @@ import com.amalvadkar.lms.auth.app.entities.UserEntity;
 import com.amalvadkar.lms.auth.app.enums.ErrorMsgEnum;
 import com.amalvadkar.lms.auth.app.enums.UserStatusEnum;
 import com.amalvadkar.lms.auth.app.exception.EmailNotFoundException;
-import com.amalvadkar.lms.auth.app.exception.OtpExpireException;
-import com.amalvadkar.lms.auth.app.exception.OtpNotValidException;
+import com.amalvadkar.lms.auth.app.exception.InvalidOtpException;
+import com.amalvadkar.lms.auth.app.exception.OtpExpiredException;
 import com.amalvadkar.lms.auth.app.generator.OtpGenerator;
 import com.amalvadkar.lms.auth.app.helper.TokenHelper;
 import com.amalvadkar.lms.auth.app.models.SendOtpDto;
 import com.amalvadkar.lms.auth.app.models.request.CreateAccountRequest;
 import com.amalvadkar.lms.auth.app.models.request.SignInRequest;
 import com.amalvadkar.lms.auth.app.models.request.VerifyAccountRequest;
-import com.amalvadkar.lms.auth.app.models.request.VerifySignInOtpReq;
+import com.amalvadkar.lms.auth.app.models.request.VerifyOtpRequest;
 import com.amalvadkar.lms.auth.app.models.resonse.CustomResModel;
+import com.amalvadkar.lms.auth.app.models.resonse.VerifyOtpResponse;
 import com.amalvadkar.lms.auth.app.repositories.RoleRepo;
 import com.amalvadkar.lms.auth.app.repositories.UserRepo;
 import com.amalvadkar.lms.auth.email.dto.MailDto;
@@ -23,6 +24,8 @@ import com.amalvadkar.lms.auth.email.sender.EmailSender;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,6 +38,7 @@ import static com.amalvadkar.lms.auth.app.constants.AppConstants.*;
 import static com.amalvadkar.lms.auth.app.enums.ResponseMsgEnum.CREATED_SUCCESSFULLY_MSG;
 import static java.net.URLEncoder.encode;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.springframework.http.HttpHeaders.AUTHORIZATION;
 
 @Service
 @RequiredArgsConstructor
@@ -137,7 +141,7 @@ public class AuthService {
         UserEntity userEntity = user.orElseThrow(() -> new EmailNotFoundException(ErrorMsgEnum.EMAIL_NOT_EXIST.getValue()));
         SendOtpDto sendOtpDto = new SendOtpDto(OtpGenerator.generateOtp(appProps.otpLength()), Instant.now().plus(20, ChronoUnit.MINUTES));
         userEntity.setOtp(sendOtpDto.otp());
-        userEntity.setOpExpireTime(sendOtpDto.otpExpireTime());
+        userEntity.setOtpExpiryTime(sendOtpDto.otpExpireTime());
         UserEntity updatedUser = userRepo.save(userEntity);
 
         MailDto mailDto = new MailDto(
@@ -152,20 +156,52 @@ public class AuthService {
     }
 
     @Transactional
-    public CustomResModel verifySignInOtp(VerifySignInOtpReq verifySignInOtpReq) {
-        Optional<UserEntity> userEntity = this.userRepo.findByOtpAndEmailAndDeleteFlagFalse(verifySignInOtpReq.getOtp(), verifySignInOtpReq.getEmail());
+    public ResponseEntity<VerifyOtpResponse> verifyOtp(VerifyOtpRequest verifyOtpRequest) {
+        UserEntity userEntity = validateOtp(verifyOtpRequest);
+        VerifyOtpResponse verifyOtpResponse = prepareVerifyOtpResponse(userEntity);
+        UserEntity updatedUserEntity = updateUserEntity(userEntity);
+        return prepareVerifyOtpResponseEntity(updatedUserEntity, verifyOtpResponse);
+    }
 
-        userEntity.map((user) -> user.getOtp().equals(verifySignInOtpReq.getOtp()))
-                .orElseThrow(() -> new OtpNotValidException("Otp invalid"));
+    private static VerifyOtpResponse prepareVerifyOtpResponse(UserEntity userEntity) {
+        VerifyOtpResponse verifyOtpResponse = new VerifyOtpResponse();
+        Instant oldLastLoginTime = userEntity.getLastLoginTime();
+        verifyOtpResponse.setLastLoginDetails(oldLastLoginTime);
+        return verifyOtpResponse;
+    }
 
-        userEntity.map((user) -> user.getOpExpireTime().isAfter(Instant.now())).orElseThrow(() -> new OtpExpireException("Otp has been expired please sign in again"));
-        log.info("all===========fine");
-        return userEntity.map((user) -> {
-            user.setOtp(null);
-            user.setOpExpireTime(null);
-            UserEntity updatedUser = userRepo.save(user);
-            return CustomResModel.success(tokenHelper.generateToken(updatedUser), "jwt token sent");
-        }).orElse(null);
+    private ResponseEntity<VerifyOtpResponse> prepareVerifyOtpResponseEntity(UserEntity updatedUserEntity, VerifyOtpResponse verifyOtpResponse) {
+        return ResponseEntity.status(HttpStatus.OK)
+                .header(AUTHORIZATION, tokenHelper.generateToken(updatedUserEntity))
+                .body(verifyOtpResponse);
+    }
+
+    private UserEntity updateUserEntity(UserEntity userEntity) {
+        userEntity.setOtp(null);
+        userEntity.setOtpExpiryTime(null);
+        userEntity.setLastLoginTime(Instant.now());
+        return userRepo.save(userEntity);
+    }
+
+    private UserEntity validateOtp(VerifyOtpRequest verifyOtpRequest) {
+        Optional<UserEntity> userEntityOpt = findUser(verifyOtpRequest);
+        UserEntity userEntity = userEntityOpt.orElseThrow(InvalidOtpException::new);
+        checkForOtpExpired(userEntity);
+        return userEntity;
+    }
+
+    private static void checkForOtpExpired(UserEntity userEntity) {
+        if (otpIsExpiredFor(userEntity)){
+            throw new OtpExpiredException();
+        }
+    }
+
+    private static boolean otpIsExpiredFor(UserEntity userEntity) {
+        return userEntity.getOtpExpiryTime().isAfter(Instant.now());
+    }
+
+    private Optional<UserEntity> findUser(VerifyOtpRequest verifyOtpRequest) {
+        return this.userRepo.findByOtpAndEmailAndDeleteFlagFalse(verifyOtpRequest.getOtp(), verifyOtpRequest.getEmail());
     }
 
     public CustomResModel verifyJwtToken(String authToken){

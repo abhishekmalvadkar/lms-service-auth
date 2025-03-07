@@ -2,6 +2,7 @@ package com.amalvadkar.lms.auth.app.controller.rest;
 
 import com.amalvadkar.lms.auth.app.models.request.*;
 import com.amalvadkar.lms.auth.app.models.resonse.CustomResModel;
+import com.amalvadkar.lms.auth.app.models.resonse.VerifyOtpResponse;
 import com.amalvadkar.lms.auth.app.services.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -44,8 +45,8 @@ public class AuthRestController {
     }
 
     @PostMapping(ENDPOINT_VERIFY_OTP)
-    public ResponseEntity<CustomResModel> verifySignInOtp(@RequestBody VerifySignInOtpReq verifySignInOtpReq) {
-        return ResponseEntity.ok(this.authService.verifySignInOtp(verifySignInOtpReq));
+    public ResponseEntity<VerifyOtpResponse> verifyOtp(@RequestBody VerifyOtpRequest verifyOtpRequest) {
+        return this.authService.verifyOtp(verifyOtpRequest);
 
     }
 

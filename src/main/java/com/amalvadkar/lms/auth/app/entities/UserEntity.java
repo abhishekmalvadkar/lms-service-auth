@@ -38,7 +38,7 @@ public class UserEntity extends BaseEntity {
     private String otp;
 
     @Column(name = "otp_expire_time")
-    private Instant opExpireTime;
+    private Instant otpExpiryTime;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "role_id", nullable = false)
