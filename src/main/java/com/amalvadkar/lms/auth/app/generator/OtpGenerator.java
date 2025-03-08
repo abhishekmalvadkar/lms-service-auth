@@ -1,7 +1,7 @@
 package com.amalvadkar.lms.auth.app.generator;
 
 import com.amalvadkar.lms.auth.ApplicationProperties;
-import com.amalvadkar.lms.auth.app.models.OtpDto;
+import com.amalvadkar.lms.auth.app.models.dto.OtpDto;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.stereotype.Component;

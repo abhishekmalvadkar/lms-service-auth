@@ -9,8 +9,8 @@ import com.amalvadkar.lms.auth.app.exception.InvalidOtpException;
 import com.amalvadkar.lms.auth.app.exception.OtpExpiredException;
 import com.amalvadkar.lms.auth.app.generator.OtpGenerator;
 import com.amalvadkar.lms.auth.app.helper.TokenHelper;
-import com.amalvadkar.lms.auth.app.models.OtpDto;
 import com.amalvadkar.lms.auth.app.models.dto.CreateTokenDto;
+import com.amalvadkar.lms.auth.app.models.dto.OtpDto;
 import com.amalvadkar.lms.auth.app.models.request.*;
 import com.amalvadkar.lms.auth.app.models.resonse.CustomResModel;
 import com.amalvadkar.lms.auth.app.models.resonse.VerifyOtpResponse;
@@ -32,7 +32,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import static com.amalvadkar.lms.auth.app.constants.AppConstants.*;
-import static com.amalvadkar.lms.auth.app.enums.ResponseMsgEnum.CREATED_SUCCESSFULLY_MSG;
+import static com.amalvadkar.lms.auth.app.enums.ResponseMessageEnum.CREATED_SUCCESSFULLY;
 import static java.net.URLEncoder.encode;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.springframework.http.HttpHeaders.AUTHORIZATION;
@@ -61,7 +61,7 @@ public class AuthService {
     private static CustomResModel prepareCreateAccountResponse(UserEntity savedUserEntity) {
         return CustomResModel.success(
                 Map.of(AppConstants.USER_ID, savedUserEntity.getId()),
-                CREATED_SUCCESSFULLY_MSG.getValue());
+                CREATED_SUCCESSFULLY.getValue());
     }
 
     private static VerifyEmailDTO prepareVerifyEmailDto(UserEntity savedUserEntity) {

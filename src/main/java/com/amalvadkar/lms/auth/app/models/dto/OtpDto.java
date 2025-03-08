@@ -1,4 +1,4 @@
-package com.amalvadkar.lms.auth.app.models;
+package com.amalvadkar.lms.auth.app.models.dto;
 
 import java.time.Instant;
 

@@ -1,6 +1,11 @@
 package com.amalvadkar.lms.auth.app.constants;
 
 public class AppConstants {
+
+    private AppConstants() {
+        throw new AssertionError("No com.amalvadkar.lms.auth.app.constants.AppConstants instances for you!");
+    }
+
     public static final String ROLE_CUSTOMER_CODE = "CUSTOMER";
     public static final String ROLE_NOT_FOUND_ERR_MSG = "Role not found";
     public static final String VERIFY_ACCOUNT_EMAIL_SUBJECT = "Verify Your Lms Account";
