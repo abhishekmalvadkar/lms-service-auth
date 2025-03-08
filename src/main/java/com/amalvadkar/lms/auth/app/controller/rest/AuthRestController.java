@@ -46,7 +46,6 @@ public class AuthRestController {
     public ResponseEntity<VerifyOtpResponse> verifyOtp(@RequestBody VerifyOtpRequest verifyOtpRequest,
                                                        @RequestHeader(REQUEST_HEADER_DEVICE) String device) {
         return this.authService.verifyOtp(verifyOtpRequest , device);
-
     }
 
     @PostMapping(ENDPOINT_VERIFY_TOKEN)
