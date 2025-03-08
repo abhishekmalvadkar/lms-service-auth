@@ -6,7 +6,6 @@ import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.hibernate.annotations.Comment;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
@@ -24,10 +23,10 @@ public class EmailSender {
      private final ApplicationProperties appProps;
 
     @Async
-    // TODO: Need to track email sent or not or any exception happen because emails are important
+    // TODO: Need to track email sent or not using job code or any exception happen because emails are important
     public void sendInAsync(MailDto mailDTO) {
         try {
-            if (emailSendIsDisbaled()){
+            if (emailSendIsDisabled()){
                 log.warn("Email will not be send because email send feature is disabled");
                 return;
             }
@@ -53,8 +52,8 @@ public class EmailSender {
         }
     }
 
-    private boolean emailSendIsDisbaled() {
-        return !appProps.emailSendEnabled();
+    private boolean emailSendIsDisabled() {
+        return Boolean.FALSE.equals(appProps.emailSendEnabled());
     }
 
 

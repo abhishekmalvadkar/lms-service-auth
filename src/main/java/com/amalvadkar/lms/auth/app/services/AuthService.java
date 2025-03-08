@@ -1,100 +1,238 @@
 package com.amalvadkar.lms.auth.app.services;
 
 import com.amalvadkar.lms.auth.ApplicationProperties;
+import com.amalvadkar.lms.auth.app.constants.AppConstants;
 import com.amalvadkar.lms.auth.app.entities.UserEntity;
-import com.amalvadkar.lms.auth.app.enums.ResponseMsgEnum;
-import com.amalvadkar.lms.auth.app.models.request.CreateAccountReq;
-import com.amalvadkar.lms.auth.app.models.request.VerifyAccountRequest;
+import com.amalvadkar.lms.auth.app.enums.UserStatusEnum;
+import com.amalvadkar.lms.auth.app.exception.AccountLockedException;
+import com.amalvadkar.lms.auth.app.exception.InvalidOtpException;
+import com.amalvadkar.lms.auth.app.exception.OtpExpiredException;
+import com.amalvadkar.lms.auth.app.generator.OtpGenerator;
+import com.amalvadkar.lms.auth.app.helper.TokenHelper;
+import com.amalvadkar.lms.auth.app.models.dto.CreateTokenDto;
+import com.amalvadkar.lms.auth.app.models.dto.OtpDto;
+import com.amalvadkar.lms.auth.app.models.request.*;
 import com.amalvadkar.lms.auth.app.models.resonse.CustomResModel;
+import com.amalvadkar.lms.auth.app.models.resonse.VerifyOtpResponse;
+import com.amalvadkar.lms.auth.app.models.resonse.VerifyTokenResponse;
 import com.amalvadkar.lms.auth.app.repositories.RoleRepo;
 import com.amalvadkar.lms.auth.app.repositories.UserRepo;
 import com.amalvadkar.lms.auth.email.dto.MailDto;
 import com.amalvadkar.lms.auth.email.sender.EmailSender;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 
+import static com.amalvadkar.lms.auth.app.constants.AppConstants.*;
+import static com.amalvadkar.lms.auth.app.enums.ResponseMessageEnum.CREATED_SUCCESSFULLY;
 import static java.net.URLEncoder.encode;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.springframework.http.HttpHeaders.AUTHORIZATION;
 
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
+@Slf4j
 public class AuthService {
-
-    public static final String VERIFY_ACCOUNT_EMAIL_SUBJECT = "Verify Your Lms Account";
-    public static final String VERIFY_ACCOUNT_EMAIL_TEMPLATE_FILE_NAME = "verify-account";
-    public static final String VERIFY_ACCOUNT_SUCCESS_HTML_CONTENT = """
-            <h2>Customer Verification</h2>
-            <p class="text-success fw-bold">Congratulations! Your account has been verified.</p>
-            """;
-    public static final String VERIFY_ACCOUNT_FAIL_HTML_CONTENT = """
-             <h2>Customer Verification</h2>
-             <p class="text-danger fw-bold">Your account was already verified, or the verification code is invalid.</p>
-            """;
-
-    public static final String VERIFIED_SUCCESSFULLY_RES_MSG = "Verified successfully";
-    public static final String VERIFICATION_FAILED_RES_MSG = "Verification failed";
-
 
     private final UserRepo userRepo;
     private final RoleRepo roleRepo;
     private final EmailSender emailSender;
     private final ApplicationProperties appProps;
+    private final TokenHelper tokenHelper;
+    private final OtpGenerator otpGenerator;
 
     @Transactional
-    public CustomResModel createAcoount(@Valid CreateAccountReq createAccountReq) {
+    public CustomResModel createAccount(CreateAccountRequest createAccountRequest) {
+        this.userRepo.throwIfEmailExists(createAccountRequest.email());
+        UserEntity savedUserEntity = saveNewUserToDb(createAccountRequest);
+        sendVerifyAccountEmail(prepareVerifyEmailDto(savedUserEntity));
+        return prepareCreateAccountResponse(savedUserEntity);
+    }
 
+    private static CustomResModel prepareCreateAccountResponse(UserEntity savedUserEntity) {
+        return CustomResModel.success(
+                Map.of(AppConstants.USER_ID, savedUserEntity.getId()),
+                CREATED_SUCCESSFULLY.getValue());
+    }
+
+    private static VerifyEmailDTO prepareVerifyEmailDto(UserEntity savedUserEntity) {
+        return new VerifyEmailDTO(
+                savedUserEntity.getEmail(),
+                savedUserEntity.getVerificationToken(),
+                savedUserEntity.fullName());
+    }
+
+    private UserEntity saveNewUserToDb(CreateAccountRequest createAccountRequest) {
         UserEntity userEntity = new UserEntity();
-        userEntity.setFirstName(createAccountReq.firstName());
-        userEntity.setLastName(createAccountReq.lastName());
-        userEntity.setVerificationToken(UUID.randomUUID().toString());
-        userEntity.setEmail(createAccountReq.email());
-        userEntity.setRole(roleRepo.fetchRoleBasedOnCode());
-        UserEntity createdUser = userRepo.save(userEntity);
-
-        sendVerificationEmail(new VerifyEmailDTO(userEntity.getEmail(), userEntity.getVerificationToken(), userEntity.fullName()));
-        return CustomResModel.success(Map.of("userId", createdUser.getId()), ResponseMsgEnum.CREATED_SUCCESSFULLY_MSG.getValue());
+        userEntity.setFirstName(createAccountRequest.firstName());
+        userEntity.setLastName(createAccountRequest.lastName());
+        userEntity.setEmail(createAccountRequest.email());
+        userEntity.setRole(roleRepo.fetchRoleByCode(ROLE_CUSTOMER_CODE));
+        return userRepo.save(userEntity);
     }
 
     @Transactional
-    public CustomResModel verifyAccount(VerifyAccountRequest verifyEmailReq) {
-        Optional<UserEntity> userEntityOpt = this.userRepo.findByEmailAndToken(verifyEmailReq.email(),
-                verifyEmailReq.verificationToke());
+    public CustomResModel verifyAccount(VerifyAccountRequest verifyEmailRequest) {
+        Optional<UserEntity> userEntityOpt = findUser(verifyEmailRequest);
         return userEntityOpt.map(this::activateAccount)
-                .orElseGet(() ->
-                        CustomResModel.success(VERIFY_ACCOUNT_FAIL_HTML_CONTENT, VERIFICATION_FAILED_RES_MSG));
+                .orElseGet(this::prepareVerifyAccountFailResponse);
+    }
+
+    private Optional<UserEntity> findUser(VerifyAccountRequest verifyEmailReq) {
+        return this.userRepo.findByEmailAndToken(verifyEmailReq.email(),
+                verifyEmailReq.verificationToken());
+    }
+
+    private CustomResModel prepareVerifyAccountFailResponse() {
+        return CustomResModel.success(VERIFY_ACCOUNT_FAIL_HTML_CONTENT,
+                VERIFICATION_FAILED_RES_MSG);
     }
 
     private CustomResModel activateAccount(UserEntity userEntity) {
         userEntity.setVerificationToken(null);
-        userEntity.setActive(true);
+        userEntity.setStatus(UserStatusEnum.ACTIVE);
         userRepo.save(userEntity);
-        return CustomResModel.success(VERIFY_ACCOUNT_SUCCESS_HTML_CONTENT, VERIFIED_SUCCESSFULLY_RES_MSG);
+        return prepareVerifyAccountSuccessResponse();
     }
 
-    private void sendVerificationEmail(VerifyEmailDTO verifyEmailDTO) {
-        String params =
-                "email=" + encode(verifyEmailDTO.email(), UTF_8) + "&token=" + encode(verifyEmailDTO.token(), UTF_8);
-        String verificationUrl = appProps.appUrl() + "/verify-account?" + params;
+    private static CustomResModel prepareVerifyAccountSuccessResponse() {
+        return CustomResModel.success(VERIFY_ACCOUNT_SUCCESS_HTML_CONTENT,
+                VERIFIED_SUCCESSFULLY_RES_MSG);
+    }
 
-        MailDto mailDto = new MailDto(
-                VERIFY_ACCOUNT_EMAIL_SUBJECT,
-                verifyEmailDTO.email(),
-                Map.of("username", verifyEmailDTO.username(), "verificationUrl", verificationUrl),
-                VERIFY_ACCOUNT_EMAIL_TEMPLATE_FILE_NAME
-        );
+    private void sendVerifyAccountEmail(VerifyEmailDTO verifyEmailDTO) {
+        String verificationUrl = prepareVerificationUrl(verifyEmailDTO);
+        MailDto mailDto = prepareMailDtoForVerifyAccount(verifyEmailDTO, verificationUrl);
         emailSender.sendInAsync(mailDto);
     }
 
-
-    record VerifyEmailDTO(String email, String token, String username) {
+    private static MailDto prepareMailDtoForVerifyAccount(VerifyEmailDTO verifyEmailDTO, String verificationUrl) {
+        return new MailDto(
+                VERIFY_ACCOUNT_EMAIL_SUBJECT,
+                verifyEmailDTO.email(),
+                Map.of(USER_NAME, verifyEmailDTO.username(),
+                        VERIFICATION_URL, verificationUrl),
+                VERIFY_ACCOUNT_EMAIL_TEMPLATE_FILE_NAME
+        );
     }
 
+    private String prepareVerificationUrl(VerifyEmailDTO verifyEmailDTO) {
+        String params =
+                "email=%s&token=%s".formatted(encode(verifyEmailDTO.email(), UTF_8),
+                        encode(verifyEmailDTO.token(), UTF_8));
+        return appProps.appUrl() + "/verify-account?" + params;
+    }
 
+    @Transactional
+    public CustomResModel signIn(@Valid SignInRequest signInRequest) {
+        UserEntity userEntity = userRepo.findUserOrThrow(signInRequest.email());
+        checkForAccountLocked(userEntity);
+        UserEntity updatedUser = updateUserWithOtp(userEntity);
+        sendOtpEmail(updatedUser);
+        return CustomResModel.success(OTP_SENT_SUCCESSFULLY_MSG);
+    }
+
+    private void sendOtpEmail(UserEntity updatedUser) {
+        MailDto mailDto = prepareOtpMailDto(updatedUser);
+        emailSender.sendInAsync(mailDto);
+    }
+
+    private MailDto prepareOtpMailDto(UserEntity updatedUser) {
+        return new MailDto(
+                "Your One-Time Password (OTP) for Sign-In",
+                updatedUser.getEmail(),
+                Map.of("otp", updatedUser.getOtp(), "expireTime", appProps.otpExpiryDurationInMin()),
+                "send-otp"
+        );
+    }
+
+    private UserEntity updateUserWithOtp(UserEntity userEntity) {
+        OtpDto otpDto = otpGenerator.generate();
+        userEntity.setOtp(otpDto.otp());
+        userEntity.setOtpExpiryTime(otpDto.otpExpiryTime());
+        return userRepo.save(userEntity);
+    }
+
+    private void checkForAccountLocked(UserEntity userEntity) {
+        if (userEntity.isAccountLocked()) {
+            throw new AccountLockedException();
+        }
+    }
+
+    @Transactional
+    public ResponseEntity<VerifyOtpResponse> verifyOtp(VerifyOtpRequest verifyOtpRequest, String device) {
+        UserEntity userEntity = validateOtp(verifyOtpRequest);
+        VerifyOtpResponse verifyOtpResponse = prepareVerifyOtpResponse(userEntity);
+        UserEntity updatedUserEntity = updateUserEntity(userEntity);
+        String token = generateJwtToken(device, updatedUserEntity);
+        return prepareVerifyOtpResponseEntity(verifyOtpResponse, token);
+    }
+
+    private String generateJwtToken(String device, UserEntity userEntity) {
+        CreateTokenDto createTokenDto = new CreateTokenDto(userEntity.getId(),
+                userEntity.getRole().getId(), device);
+        return tokenHelper.generate(createTokenDto);
+    }
+
+    private static VerifyOtpResponse prepareVerifyOtpResponse(UserEntity userEntity) {
+        VerifyOtpResponse verifyOtpResponse = new VerifyOtpResponse();
+        Instant oldLastLoginTime = userEntity.getLastLoginTime();
+        verifyOtpResponse.setLastLoginDetails(oldLastLoginTime);
+        return verifyOtpResponse;
+    }
+
+    private ResponseEntity<VerifyOtpResponse> prepareVerifyOtpResponseEntity(VerifyOtpResponse verifyOtpResponse, String token) {
+        return ResponseEntity.status(HttpStatus.OK)
+                .header(AUTHORIZATION, token)
+                .body(verifyOtpResponse);
+    }
+
+    private UserEntity updateUserEntity(UserEntity userEntity) {
+        userEntity.setOtp(null);
+        userEntity.setOtpExpiryTime(null);
+        userEntity.setLastLoginTime(Instant.now());
+        return userRepo.save(userEntity);
+    }
+
+    private UserEntity validateOtp(VerifyOtpRequest verifyOtpRequest) {
+        Optional<UserEntity> userEntityOpt = findUser(verifyOtpRequest);
+        UserEntity userEntity = userEntityOpt.orElseThrow(InvalidOtpException::new);
+        checkForOtpExpired(userEntity);
+        return userEntity;
+    }
+
+    private static void checkForOtpExpired(UserEntity userEntity) {
+        if (otpIsExpiredFor(userEntity)){
+            throw new OtpExpiredException();
+        }
+    }
+
+    private static boolean otpIsExpiredFor(UserEntity userEntity) {
+        return userEntity.getOtpExpiryTime().isAfter(Instant.now());
+    }
+
+    private Optional<UserEntity> findUser(VerifyOtpRequest verifyOtpRequest) {
+        return this.userRepo.findByOtpAndEmailAndDeleteFlagFalse(verifyOtpRequest.otp(), verifyOtpRequest.email());
+    }
+
+    public CustomResModel verifyToken(VerifyTokenRequest verifyTokenRequest){
+        VerifyTokenResponse verifyTokenResponse = tokenHelper.verify(verifyTokenRequest.token());
+        return  CustomResModel.success(verifyTokenResponse, TOKEN_VERIFIED_SUCCESSFULLY_MSG);
+    }
 }
+
+
+
+record VerifyEmailDTO(String email, String token, String username) {
+}
+
+

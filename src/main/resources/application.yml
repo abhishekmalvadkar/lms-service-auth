@@ -12,3 +12,21 @@ spring :
          auth: true
          starttls:
            enable: true
+ jpa:
+  open-in-view: false
+ application:
+    name: lms-service-auth
+ thymeleaf:
+   check-template-location: false
+
+server:
+  port: 9091
+
+
+
+lms:
+  otpLength: 6
+  otpExpiryDurationInMin: 20
+  jwt-secret: ${JWT_SECRET}
+  jwtExpiryTimeInSec: 3600 # 1 hour
+  email-templates-location: classpath:/email-templates/

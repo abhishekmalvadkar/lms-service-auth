@@ -16,33 +16,28 @@ public abstract class BaseEntity {
     private String id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name="created_by",nullable = false)
+    @JoinColumn(name = "created_by", nullable = false)
     private UserEntity createdBy;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name="updated_by",nullable = false)
+    @JoinColumn(name = "updated_by", nullable = false)
     private UserEntity updatedBy;
 
-    @Column(name="created_on",nullable = false)
+    @Column(name = "created_on", nullable = false)
     private Instant createdOn;
 
-    @Column(name="updated_on",nullable = false)
+    @Column(name = "updated_on", nullable = false)
     private Instant updatedOn;
 
-    @Column(name="delete_flag",nullable = false)
+    @Column(name = "delete_flag", nullable = false)
     private Boolean deleteFlag;
 
-    @Column(name="active",nullable = false)
-    private Boolean active;
-
     @PrePersist
-    public void beforePersist(){
-         this.id= UUID.randomUUID().toString();
+    public void beforePersist() {
+        this.id = UUID.randomUUID().toString();
         this.deleteFlag = Boolean.FALSE;
         this.createdOn = Instant.now();
-        this.updatedOn =createdOn;
-        this.active = Boolean.TRUE;
-
+        this.updatedOn = createdOn;
     }
 
 }

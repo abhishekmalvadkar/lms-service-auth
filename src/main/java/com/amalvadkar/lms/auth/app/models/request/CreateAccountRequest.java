@@ -4,17 +4,15 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 
-public record CreateAccountReq(
+public record CreateAccountRequest(
 
-        @NotEmpty(message = "First name is required")
+        @NotEmpty(message = "firstName is required")
         String firstName,
 
-        @NotEmpty(message = "Last name is required")
+        @NotEmpty(message = "lastName is required")
         String lastName,
 
         @Email(message = "Invalid email")
-        @NotNull(message = "Email is required")
-        String email
-
-) {
+        @NotNull(message = "email is required")
+        String email) {
 }
