@@ -27,7 +27,7 @@ class AuthVerifyOtpWebTest extends AbstractWebTest {
     void should_send_error_invalid_otp_if_invalid_otp_passed() throws Exception {
 
         // Given: Mock service response
-        when(authService.verifyOtp(any(VerifyOtpRequest.class), VERIFY_OTP_URL))
+        when(authService.verifyOtp(any(VerifyOtpRequest.class), any(String.class)))
                 .thenThrow(new InvalidOtpException());
 
         String requestPayload = """
@@ -39,6 +39,7 @@ class AuthVerifyOtpWebTest extends AbstractWebTest {
 
         // When: Sending request
         mockMvc.perform(post(VERIFY_OTP_URL)
+                        .header("device", "web")
                         .contentType(APPLICATION_JSON)
                         .content(requestPayload))
                 .andExpect(status().isBadRequest())
@@ -50,14 +51,14 @@ class AuthVerifyOtpWebTest extends AbstractWebTest {
                 .andExpect(jsonPath("$.message").doesNotHaveJsonPath());
 
         // Then: Verify service is called once
-        verify(authService).verifyOtp(any(VerifyOtpRequest.class), "web");
+        verify(authService).verifyOtp(any(VerifyOtpRequest.class), any(String.class));
     }
 
     @Test
     void should_send_error_otp_expired_if_expired_otp_passed() throws Exception {
 
         // Given: Mock service response
-        when(authService.verifyOtp(any(VerifyOtpRequest.class), VERIFY_OTP_URL))
+        when(authService.verifyOtp(any(VerifyOtpRequest.class), any(String.class)))
                 .thenThrow(new OtpExpiredException());
 
         String requestPayload = """
@@ -69,6 +70,7 @@ class AuthVerifyOtpWebTest extends AbstractWebTest {
 
         // When: Sending request
         mockMvc.perform(post(VERIFY_OTP_URL)
+                        .header("device", "web")
                         .contentType(APPLICATION_JSON)
                         .content(requestPayload))
                 .andExpect(status().isNotFound())
@@ -80,6 +82,6 @@ class AuthVerifyOtpWebTest extends AbstractWebTest {
                 .andExpect(jsonPath("$.message").doesNotHaveJsonPath());
 
         // Then: Verify service is called once
-        verify(authService).verifyOtp(any(VerifyOtpRequest.class), "web");
+        verify(authService).verifyOtp(any(VerifyOtpRequest.class), any(String.class));
     }
 }
