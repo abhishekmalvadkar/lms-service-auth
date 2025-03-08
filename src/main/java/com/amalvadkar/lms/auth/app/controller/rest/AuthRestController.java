@@ -25,7 +25,6 @@ public class AuthRestController {
 
     private final AuthService authService;
 
-
     @PostMapping(ENDPOINT_CREATE_ACCOUNT)
     public ResponseEntity<CustomResModel> createAccount(@Valid @RequestBody CreateAccountRequest createAccountRequest) {
         return ResponseEntity.status(HttpStatus.CREATED)
