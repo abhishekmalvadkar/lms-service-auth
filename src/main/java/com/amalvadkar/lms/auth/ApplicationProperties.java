@@ -6,8 +6,6 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.bind.DefaultValue;
 import org.springframework.validation.annotation.Validated;
 
-import java.time.Duration;
-
 
 @ConfigurationProperties(prefix = "lms")
 @Validated
@@ -21,6 +19,9 @@ public record ApplicationProperties(
 
         @NotNull(message = "otpLength property value is required")
         Integer otpLength,
+
+        @NotNull(message = "otpExpiryDurationInMin property value is required")
+        Integer otpExpiryDurationInMin,
 
         @NotEmpty(message = "jwtSecret property value is required")
         String jwtSecret,

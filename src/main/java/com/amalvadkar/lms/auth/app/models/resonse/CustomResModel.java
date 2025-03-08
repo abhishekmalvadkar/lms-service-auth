@@ -33,6 +33,14 @@ public class CustomResModel {
                 .build();
     }
 
+    public static CustomResModel success(String message){
+        return builder()
+                .success(true)
+                .code(HttpStatus.OK.value())
+                .message(message)
+                .build();
+    }
+
     public static CustomResModel fail(List<String> errors, int code){
         return builder()
                 .success(false)

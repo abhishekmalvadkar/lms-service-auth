@@ -26,6 +26,7 @@ server:
 
 lms:
   otpLength: 6
+  otpExpiryDurationInMin: 20
   jwt-secret: ${JWT_SECRET}
   jwtExpiryTimeInSec: 3600 # 1 hour
   email-templates-location: classpath:/email-templates/

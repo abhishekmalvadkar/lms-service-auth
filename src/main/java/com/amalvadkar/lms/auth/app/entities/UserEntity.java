@@ -53,4 +53,8 @@ public class UserEntity extends BaseEntity {
         this.verificationToken = UUID.randomUUID().toString();
         this.status = UserStatusEnum.LOCKED;
     }
+
+    public boolean isAccountLocked() {
+        return UserStatusEnum.LOCKED == this.status;
+    }
 }

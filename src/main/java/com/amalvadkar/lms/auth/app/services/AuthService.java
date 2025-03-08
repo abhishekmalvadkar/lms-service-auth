@@ -3,14 +3,13 @@ package com.amalvadkar.lms.auth.app.services;
 import com.amalvadkar.lms.auth.ApplicationProperties;
 import com.amalvadkar.lms.auth.app.constants.AppConstants;
 import com.amalvadkar.lms.auth.app.entities.UserEntity;
-import com.amalvadkar.lms.auth.app.enums.ErrorMsgEnum;
 import com.amalvadkar.lms.auth.app.enums.UserStatusEnum;
-import com.amalvadkar.lms.auth.app.exception.EmailNotFoundException;
+import com.amalvadkar.lms.auth.app.exception.AccountLockedException;
 import com.amalvadkar.lms.auth.app.exception.InvalidOtpException;
 import com.amalvadkar.lms.auth.app.exception.OtpExpiredException;
 import com.amalvadkar.lms.auth.app.generator.OtpGenerator;
 import com.amalvadkar.lms.auth.app.helper.TokenHelper;
-import com.amalvadkar.lms.auth.app.models.SendOtpDto;
+import com.amalvadkar.lms.auth.app.models.OtpDto;
 import com.amalvadkar.lms.auth.app.models.request.CreateAccountRequest;
 import com.amalvadkar.lms.auth.app.models.request.SignInRequest;
 import com.amalvadkar.lms.auth.app.models.request.VerifyAccountRequest;
@@ -30,7 +29,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.Map;
 import java.util.Optional;
 
@@ -51,6 +49,7 @@ public class AuthService {
     private final EmailSender emailSender;
     private final ApplicationProperties appProps;
     private final TokenHelper tokenHelper;
+    private final OtpGenerator otpGenerator;
 
     @Transactional
     public CustomResModel createAccount(CreateAccountRequest createAccountRequest) {
@@ -136,23 +135,38 @@ public class AuthService {
 
     @Transactional
     public CustomResModel signIn(@Valid SignInRequest signInRequest) {
+        UserEntity userEntity = userRepo.findUserOrThrow(signInRequest.email());
+        checkForAccountLocked(userEntity);
+        UserEntity updatedUser = updateUserWithOtp(userEntity);
+        sendOtpEmail(updatedUser);
+        return CustomResModel.success(OTP_SENT_SUCCESSFULLY_MSG);
+    }
 
-        Optional<UserEntity> user = this.userRepo.findByEmailAndDeleteFlagFalse(signInRequest.email());
-        UserEntity userEntity = user.orElseThrow(() -> new EmailNotFoundException(ErrorMsgEnum.EMAIL_NOT_EXIST.getValue()));
-        SendOtpDto sendOtpDto = new SendOtpDto(OtpGenerator.generateOtp(appProps.otpLength()), Instant.now().plus(20, ChronoUnit.MINUTES));
-        userEntity.setOtp(sendOtpDto.otp());
-        userEntity.setOtpExpiryTime(sendOtpDto.otpExpireTime());
-        UserEntity updatedUser = userRepo.save(userEntity);
+    private void sendOtpEmail(UserEntity updatedUser) {
+        MailDto mailDto = prepareOtpMailDto(updatedUser);
+        emailSender.sendInAsync(mailDto);
+    }
 
-        MailDto mailDto = new MailDto(
-                " Your One-Time Password (OTP) for Sign-In",
+    private MailDto prepareOtpMailDto(UserEntity updatedUser) {
+        return new MailDto(
+                "Your One-Time Password (OTP) for Sign-In",
                 updatedUser.getEmail(),
-                Map.of("otp", updatedUser.getOtp(), "expireTime", "20"),
+                Map.of("otp", updatedUser.getOtp(), "expireTime", appProps.otpExpiryDurationInMin()),
                 "send-otp"
         );
+    }
 
-        emailSender.sendInAsync(mailDto);
-        return CustomResModel.success(null, "OTP sent successfully");
+    private UserEntity updateUserWithOtp(UserEntity userEntity) {
+        OtpDto otpDto = otpGenerator.generate();
+        userEntity.setOtp(otpDto.otp());
+        userEntity.setOtpExpiryTime(otpDto.otpExpiryTime());
+        return userRepo.save(userEntity);
+    }
+
+    private void checkForAccountLocked(UserEntity userEntity) {
+        if (userEntity.isAccountLocked()) {
+            throw new AccountLockedException();
+        }
     }
 
     @Transactional

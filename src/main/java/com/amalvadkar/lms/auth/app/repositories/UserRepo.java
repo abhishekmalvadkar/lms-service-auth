@@ -2,6 +2,7 @@ package com.amalvadkar.lms.auth.app.repositories;
 
 import com.amalvadkar.lms.auth.app.entities.UserEntity;
 import com.amalvadkar.lms.auth.app.exception.ResourceAlreadyExistsException;
+import com.amalvadkar.lms.auth.app.exception.ResourceNotFoundException;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -29,4 +30,8 @@ public interface UserRepo extends JpaRepository<UserEntity, String> {
         }
     }
 
+    default UserEntity findUserOrThrow(String email) {
+        return findByEmailAndDeleteFlagFalse(email)
+                .orElseThrow(() -> new ResourceNotFoundException("Email not found"));
+    }
 }
