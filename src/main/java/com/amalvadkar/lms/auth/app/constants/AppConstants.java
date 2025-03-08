@@ -19,4 +19,6 @@ public class AppConstants {
     public static final String USER_NAME = "username";
     public static final String VERIFICATION_URL = "verificationUrl";
     public static final String OTP_SENT_SUCCESSFULLY_MSG = "OTP sent successfully";
+    public static final String REQUEST_HEADER_DEVICE = "device";
+    public static final String TOKEN_VERIFIED_SUCCESSFULLY_MSG = "Token verified successfully";
 }

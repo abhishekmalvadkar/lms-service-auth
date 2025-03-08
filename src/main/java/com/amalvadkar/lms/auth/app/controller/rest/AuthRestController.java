@@ -8,10 +8,9 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import static com.amalvadkar.lms.auth.app.constants.AppConstants.REQUEST_HEADER_DEVICE;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -45,14 +44,15 @@ public class AuthRestController {
     }
 
     @PostMapping(ENDPOINT_VERIFY_OTP)
-    public ResponseEntity<VerifyOtpResponse> verifyOtp(@RequestBody VerifyOtpRequest verifyOtpRequest) {
-        return this.authService.verifyOtp(verifyOtpRequest);
+    public ResponseEntity<VerifyOtpResponse> verifyOtp(@RequestBody VerifyOtpRequest verifyOtpRequest,
+                                                       @RequestHeader(REQUEST_HEADER_DEVICE) String device) {
+        return this.authService.verifyOtp(verifyOtpRequest , device);
 
     }
 
     @PostMapping(ENDPOINT_VERIFY_TOKEN)
-    public ResponseEntity<CustomResModel> verifyJwtToken(@RequestBody VerifyJwtTokenReq verifyJwtTokenReq) {
-        return ResponseEntity.ok(this.authService.verifyJwtToken(verifyJwtTokenReq.authToken()));
+    public ResponseEntity<CustomResModel> verifyToken(@RequestBody VerifyTokenRequest verifyTokenRequest) {
+        return ResponseEntity.ok(this.authService.verifyToken(verifyTokenRequest));
     }
 
 }

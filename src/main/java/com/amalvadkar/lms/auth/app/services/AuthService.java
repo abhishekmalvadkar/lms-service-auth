@@ -10,12 +10,11 @@ import com.amalvadkar.lms.auth.app.exception.OtpExpiredException;
 import com.amalvadkar.lms.auth.app.generator.OtpGenerator;
 import com.amalvadkar.lms.auth.app.helper.TokenHelper;
 import com.amalvadkar.lms.auth.app.models.OtpDto;
-import com.amalvadkar.lms.auth.app.models.request.CreateAccountRequest;
-import com.amalvadkar.lms.auth.app.models.request.SignInRequest;
-import com.amalvadkar.lms.auth.app.models.request.VerifyAccountRequest;
-import com.amalvadkar.lms.auth.app.models.request.VerifyOtpRequest;
+import com.amalvadkar.lms.auth.app.models.dto.CreateTokenDto;
+import com.amalvadkar.lms.auth.app.models.request.*;
 import com.amalvadkar.lms.auth.app.models.resonse.CustomResModel;
 import com.amalvadkar.lms.auth.app.models.resonse.VerifyOtpResponse;
+import com.amalvadkar.lms.auth.app.models.resonse.VerifyTokenResponse;
 import com.amalvadkar.lms.auth.app.repositories.RoleRepo;
 import com.amalvadkar.lms.auth.app.repositories.UserRepo;
 import com.amalvadkar.lms.auth.email.dto.MailDto;
@@ -170,11 +169,18 @@ public class AuthService {
     }
 
     @Transactional
-    public ResponseEntity<VerifyOtpResponse> verifyOtp(VerifyOtpRequest verifyOtpRequest) {
+    public ResponseEntity<VerifyOtpResponse> verifyOtp(VerifyOtpRequest verifyOtpRequest, String device) {
         UserEntity userEntity = validateOtp(verifyOtpRequest);
         VerifyOtpResponse verifyOtpResponse = prepareVerifyOtpResponse(userEntity);
         UserEntity updatedUserEntity = updateUserEntity(userEntity);
-        return prepareVerifyOtpResponseEntity(updatedUserEntity, verifyOtpResponse);
+        String token = generateJwtToken(device, updatedUserEntity);
+        return prepareVerifyOtpResponseEntity(verifyOtpResponse, token);
+    }
+
+    private String generateJwtToken(String device, UserEntity userEntity) {
+        CreateTokenDto createTokenDto = new CreateTokenDto(userEntity.getId(),
+                userEntity.getRole().getId(), device);
+        return tokenHelper.generate(createTokenDto);
     }
 
     private static VerifyOtpResponse prepareVerifyOtpResponse(UserEntity userEntity) {
@@ -184,9 +190,9 @@ public class AuthService {
         return verifyOtpResponse;
     }
 
-    private ResponseEntity<VerifyOtpResponse> prepareVerifyOtpResponseEntity(UserEntity updatedUserEntity, VerifyOtpResponse verifyOtpResponse) {
+    private ResponseEntity<VerifyOtpResponse> prepareVerifyOtpResponseEntity(VerifyOtpResponse verifyOtpResponse, String token) {
         return ResponseEntity.status(HttpStatus.OK)
-                .header(AUTHORIZATION, tokenHelper.generateToken(updatedUserEntity))
+                .header(AUTHORIZATION, token)
                 .body(verifyOtpResponse);
     }
 
@@ -218,8 +224,9 @@ public class AuthService {
         return this.userRepo.findByOtpAndEmailAndDeleteFlagFalse(verifyOtpRequest.otp(), verifyOtpRequest.email());
     }
 
-    public CustomResModel verifyJwtToken(String authToken){
-      return  CustomResModel.success(tokenHelper.validateJwtToken(authToken),"token is valid");
+    public CustomResModel verifyToken(VerifyTokenRequest verifyTokenRequest){
+        VerifyTokenResponse verifyTokenResponse = tokenHelper.verify(verifyTokenRequest.token());
+        return  CustomResModel.success(verifyTokenResponse, TOKEN_VERIFIED_SUCCESSFULLY_MSG);
     }
 }
 
