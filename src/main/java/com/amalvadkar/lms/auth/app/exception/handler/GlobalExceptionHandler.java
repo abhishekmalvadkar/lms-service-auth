@@ -5,7 +5,6 @@ import com.amalvadkar.lms.auth.app.exception.TokenException;
 import com.amalvadkar.lms.auth.app.models.resonse.CustomResModel;
 import com.amalvadkar.lms.auth.app.models.resonse.VerifyTokenResponse;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -35,16 +34,14 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(AuthException.class)
     public ResponseEntity<CustomResModel> handleAuthException(AuthException ex){
         logException(ex);
-        return ResponseEntity.status(HttpStatus.valueOf(ex.getCode()))
-                .body(CustomResModel.fail(List.of(ex.getMessage()), ex.getCode()));
+        return ResponseEntity.ok(CustomResModel.fail(List.of(ex.getMessage()), ex.getCode()));
     }
 
     @ExceptionHandler(Throwable.class)
     public ResponseEntity<CustomResModel> handleThrowable(Throwable ex){
         logException(ex);
-        return ResponseEntity.internalServerError()
-                .body(CustomResModel.fail(List.of(SOMETHING_WENT_WRONG_ERR_MSG) ,
-                        INTERNAL_SERVER_ERROR.value()));
+        return ResponseEntity.ok(CustomResModel.fail(List.of(SOMETHING_WENT_WRONG_ERR_MSG) ,
+                INTERNAL_SERVER_ERROR.value()));
     }
 
     private static void logException(Throwable ex) {
