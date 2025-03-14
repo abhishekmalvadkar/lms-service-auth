@@ -228,7 +228,7 @@ public class AuthService {
     }
 
     private static boolean otpIsExpiredFor(UserEntity userEntity) {
-        return userEntity.getOtpExpiryTime().isAfter(Instant.now());
+        return userEntity.getOtpExpiryTime().isBefore(Instant.now());
     }
 
     private Optional<UserEntity> findUser(VerifyOtpRequest verifyOtpRequest) {
