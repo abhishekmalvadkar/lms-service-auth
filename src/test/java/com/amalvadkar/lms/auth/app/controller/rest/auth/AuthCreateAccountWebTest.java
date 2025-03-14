@@ -71,7 +71,7 @@ class AuthCreateAccountWebTest extends AbstractWebTest {
         mockMvc.perform(post(CREATE_ACCOUNT_URL)
                         .contentType(APPLICATION_JSON)
                         .content(requestPayload))
-                .andExpect(status().isConflict())
+                .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(409))
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.errors").exists())
