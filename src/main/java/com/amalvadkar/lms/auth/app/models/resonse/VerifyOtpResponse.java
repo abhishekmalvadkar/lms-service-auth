@@ -13,7 +13,10 @@ import static java.util.Objects.isNull;
 @Setter
 public class VerifyOtpResponse{
 
+    @Setter(AccessLevel.NONE)
     private boolean firstLogin;
+
+    @Setter(AccessLevel.NONE)
     private Instant lastLoginTime;
 
     private Map<String,Object> metaData;
