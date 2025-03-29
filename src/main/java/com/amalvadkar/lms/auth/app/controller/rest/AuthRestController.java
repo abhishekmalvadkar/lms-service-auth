@@ -1,20 +1,29 @@
 package com.amalvadkar.lms.auth.app.controller.rest;
 
-import com.amalvadkar.lms.auth.app.models.request.*;
+import com.amalvadkar.lms.auth.app.models.request.CreateAccountRequest;
+import com.amalvadkar.lms.auth.app.models.request.SignInRequest;
+import com.amalvadkar.lms.auth.app.models.request.VerifyAccountRequest;
+import com.amalvadkar.lms.auth.app.models.request.VerifyOtpRequest;
+import com.amalvadkar.lms.auth.app.models.request.VerifyTokenRequest;
 import com.amalvadkar.lms.auth.app.models.resonse.CustomResModel;
-import com.amalvadkar.lms.auth.app.models.resonse.VerifyOtpResponse;
 import com.amalvadkar.lms.auth.app.services.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import static com.amalvadkar.lms.auth.app.constants.AppConstants.REQUEST_HEADER_DEVICE;
 
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
+@CrossOrigin(origins = "*", exposedHeaders = "*")
 public class AuthRestController {
 
     private static final String ENDPOINT_CREATE_ACCOUNT = "/create-account";
@@ -43,8 +52,8 @@ public class AuthRestController {
     }
 
     @PostMapping(ENDPOINT_VERIFY_OTP)
-    public ResponseEntity<VerifyOtpResponse> verifyOtp(@RequestBody VerifyOtpRequest verifyOtpRequest,
-                                                       @RequestHeader(REQUEST_HEADER_DEVICE) String device) {
+    public ResponseEntity<CustomResModel> verifyOtp(@RequestBody VerifyOtpRequest verifyOtpRequest,
+                                                    @RequestHeader(REQUEST_HEADER_DEVICE) String device) {
         return this.authService.verifyOtp(verifyOtpRequest , device);
     }
 

@@ -2,6 +2,8 @@ package com.amalvadkar.lms.auth.app.constants;
 
 public class AppConstants {
 
+    public static final String OTP_VERIFIED_SUCCESSFULLY_MSG = "OTP Verified successfully";
+
     private AppConstants() {
         throw new AssertionError("No com.amalvadkar.lms.auth.app.constants.AppConstants instances for you!");
     }

@@ -11,11 +11,16 @@ import com.amalvadkar.lms.auth.app.generator.OtpGenerator;
 import com.amalvadkar.lms.auth.app.helper.TokenHelper;
 import com.amalvadkar.lms.auth.app.models.dto.CreateTokenDto;
 import com.amalvadkar.lms.auth.app.models.dto.OtpDto;
-import com.amalvadkar.lms.auth.app.models.request.*;
+import com.amalvadkar.lms.auth.app.models.request.CreateAccountRequest;
+import com.amalvadkar.lms.auth.app.models.request.SignInRequest;
+import com.amalvadkar.lms.auth.app.models.request.VerifyAccountRequest;
+import com.amalvadkar.lms.auth.app.models.request.VerifyOtpRequest;
+import com.amalvadkar.lms.auth.app.models.request.VerifyTokenRequest;
 import com.amalvadkar.lms.auth.app.models.resonse.CustomResModel;
 import com.amalvadkar.lms.auth.app.models.resonse.VerifyOtpResponse;
 import com.amalvadkar.lms.auth.app.models.resonse.VerifyTokenResponse;
 import com.amalvadkar.lms.auth.app.repositories.RoleRepo;
+import com.amalvadkar.lms.auth.app.repositories.TagRepo;
 import com.amalvadkar.lms.auth.app.repositories.UserRepo;
 import com.amalvadkar.lms.auth.email.dto.MailDto;
 import com.amalvadkar.lms.auth.email.sender.EmailSender;
@@ -28,10 +33,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
 import static com.amalvadkar.lms.auth.app.constants.AppConstants.*;
+import static com.amalvadkar.lms.auth.app.enums.MetaDataEnum.TAG_DROP_DOWN_OPTIONS;
 import static com.amalvadkar.lms.auth.app.enums.ResponseMessageEnum.CREATED_SUCCESSFULLY;
 import static java.net.URLEncoder.encode;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -49,6 +56,7 @@ public class AuthService {
     private final ApplicationProperties appProps;
     private final TokenHelper tokenHelper;
     private final OtpGenerator otpGenerator;
+    private final TagRepo tagRepo;
 
     @Transactional
     public CustomResModel createAccount(CreateAccountRequest createAccountRequest) {
@@ -169,12 +177,18 @@ public class AuthService {
     }
 
     @Transactional
-    public ResponseEntity<VerifyOtpResponse> verifyOtp(VerifyOtpRequest verifyOtpRequest, String device) {
+    public ResponseEntity<CustomResModel> verifyOtp(VerifyOtpRequest verifyOtpRequest, String device) {
         UserEntity userEntity = validateOtp(verifyOtpRequest);
-        VerifyOtpResponse verifyOtpResponse = prepareVerifyOtpResponse(userEntity);
         UserEntity updatedUserEntity = updateUserEntity(userEntity);
+        VerifyOtpResponse verifyOtpResponse = prepareVerifyOtpResponse(updatedUserEntity);
         String token = generateJwtToken(device, updatedUserEntity);
         return prepareVerifyOtpResponseEntity(verifyOtpResponse, token);
+    }
+
+    private Map<String, Object> prepareMetadata(UserEntity updatedUserEntity) {
+        Map<String, Object> metaData = new HashMap<>();
+        metaData.put(TAG_DROP_DOWN_OPTIONS.value(), tagRepo.findTagsForUser(updatedUserEntity.getId()));
+        return metaData;
     }
 
     private String generateJwtToken(String device, UserEntity userEntity) {
@@ -183,17 +197,19 @@ public class AuthService {
         return tokenHelper.generate(createTokenDto);
     }
 
-    private static VerifyOtpResponse prepareVerifyOtpResponse(UserEntity userEntity) {
+    private VerifyOtpResponse prepareVerifyOtpResponse(UserEntity userEntity) {
         VerifyOtpResponse verifyOtpResponse = new VerifyOtpResponse();
         Instant oldLastLoginTime = userEntity.getLastLoginTime();
         verifyOtpResponse.setLastLoginDetails(oldLastLoginTime);
+        verifyOtpResponse.setMetaData(prepareMetadata(userEntity));
         return verifyOtpResponse;
     }
 
-    private ResponseEntity<VerifyOtpResponse> prepareVerifyOtpResponseEntity(VerifyOtpResponse verifyOtpResponse, String token) {
+    private ResponseEntity<CustomResModel> prepareVerifyOtpResponseEntity(VerifyOtpResponse verifyOtpResponse, String token) {
+        CustomResModel customResModel = CustomResModel.success(verifyOtpResponse, OTP_VERIFIED_SUCCESSFULLY_MSG);
         return ResponseEntity.status(HttpStatus.OK)
                 .header(AUTHORIZATION, token)
-                .body(verifyOtpResponse);
+                .body(customResModel);
     }
 
     private UserEntity updateUserEntity(UserEntity userEntity) {
@@ -217,7 +233,7 @@ public class AuthService {
     }
 
     private static boolean otpIsExpiredFor(UserEntity userEntity) {
-        return userEntity.getOtpExpiryTime().isAfter(Instant.now());
+        return userEntity.getOtpExpiryTime().isBefore(Instant.now());
     }
 
     private Optional<UserEntity> findUser(VerifyOtpRequest verifyOtpRequest) {
