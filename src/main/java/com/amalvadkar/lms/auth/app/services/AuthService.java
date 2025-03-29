@@ -11,7 +11,11 @@ import com.amalvadkar.lms.auth.app.generator.OtpGenerator;
 import com.amalvadkar.lms.auth.app.helper.TokenHelper;
 import com.amalvadkar.lms.auth.app.models.dto.CreateTokenDto;
 import com.amalvadkar.lms.auth.app.models.dto.OtpDto;
-import com.amalvadkar.lms.auth.app.models.request.*;
+import com.amalvadkar.lms.auth.app.models.request.CreateAccountRequest;
+import com.amalvadkar.lms.auth.app.models.request.SignInRequest;
+import com.amalvadkar.lms.auth.app.models.request.VerifyAccountRequest;
+import com.amalvadkar.lms.auth.app.models.request.VerifyOtpRequest;
+import com.amalvadkar.lms.auth.app.models.request.VerifyTokenRequest;
 import com.amalvadkar.lms.auth.app.models.resonse.CustomResModel;
 import com.amalvadkar.lms.auth.app.models.resonse.VerifyOtpResponse;
 import com.amalvadkar.lms.auth.app.models.resonse.VerifyTokenResponse;
@@ -173,7 +177,7 @@ public class AuthService {
     }
 
     @Transactional
-    public ResponseEntity<VerifyOtpResponse> verifyOtp(VerifyOtpRequest verifyOtpRequest, String device) {
+    public ResponseEntity<CustomResModel> verifyOtp(VerifyOtpRequest verifyOtpRequest, String device) {
         UserEntity userEntity = validateOtp(verifyOtpRequest);
         UserEntity updatedUserEntity = updateUserEntity(userEntity);
         VerifyOtpResponse verifyOtpResponse = prepareVerifyOtpResponse(updatedUserEntity);
@@ -201,10 +205,11 @@ public class AuthService {
         return verifyOtpResponse;
     }
 
-    private ResponseEntity<VerifyOtpResponse> prepareVerifyOtpResponseEntity(VerifyOtpResponse verifyOtpResponse, String token) {
+    private ResponseEntity<CustomResModel> prepareVerifyOtpResponseEntity(VerifyOtpResponse verifyOtpResponse, String token) {
+        CustomResModel customResModel = CustomResModel.success(verifyOtpResponse, OTP_VERIFIED_SUCCESSFULLY_MSG);
         return ResponseEntity.status(HttpStatus.OK)
                 .header(AUTHORIZATION, token)
-                .body(verifyOtpResponse);
+                .body(customResModel);
     }
 
     private UserEntity updateUserEntity(UserEntity userEntity) {
