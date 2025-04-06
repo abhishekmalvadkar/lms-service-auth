@@ -22,6 +22,10 @@ spring :
 server:
   port: 9091
 
+logging:
+  file:
+    name: /var/lms/log/lms-service-auth/lms-service-auth.log
+
 
 
 lms:
