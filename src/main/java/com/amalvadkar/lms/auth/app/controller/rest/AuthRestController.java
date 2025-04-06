@@ -6,12 +6,12 @@ import com.amalvadkar.lms.auth.app.models.request.VerifyAccountRequest;
 import com.amalvadkar.lms.auth.app.models.request.VerifyOtpRequest;
 import com.amalvadkar.lms.auth.app.models.request.VerifyTokenRequest;
 import com.amalvadkar.lms.auth.app.models.resonse.CustomResModel;
+import com.amalvadkar.lms.auth.app.models.resonse.VerifyTokenResponse;
 import com.amalvadkar.lms.auth.app.services.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -23,7 +23,6 @@ import static com.amalvadkar.lms.auth.app.constants.AppConstants.REQUEST_HEADER_
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*", exposedHeaders = "*")
 public class AuthRestController {
 
     private static final String ENDPOINT_CREATE_ACCOUNT = "/create-account";
@@ -58,7 +57,7 @@ public class AuthRestController {
     }
 
     @PostMapping(ENDPOINT_VERIFY_TOKEN)
-    public ResponseEntity<CustomResModel> verifyToken(@RequestBody VerifyTokenRequest verifyTokenRequest) {
+    public ResponseEntity<VerifyTokenResponse> verifyToken(@RequestBody VerifyTokenRequest verifyTokenRequest) {
         return ResponseEntity.ok(this.authService.verifyToken(verifyTokenRequest));
     }
 

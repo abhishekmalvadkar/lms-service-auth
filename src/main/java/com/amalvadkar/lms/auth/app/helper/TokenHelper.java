@@ -4,19 +4,28 @@ import com.amalvadkar.lms.auth.ApplicationProperties;
 import com.amalvadkar.lms.auth.app.exception.TokenException;
 import com.amalvadkar.lms.auth.app.models.dto.CreateTokenDto;
 import com.amalvadkar.lms.auth.app.models.resonse.VerifyTokenResponse;
-import io.jsonwebtoken.*;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.Jws;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.MalformedJwtException;
+import io.jsonwebtoken.UnsupportedJwtException;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
 import java.time.Clock;
 import java.time.Instant;
+import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+
+import static com.amalvadkar.lms.auth.app.constants.AppConstants.TOKEN_VERIFIED_SUCCESSFULLY_MSG;
 
 @Component
 @RequiredArgsConstructor
@@ -73,10 +82,20 @@ public class TokenHelper {
 
     private static VerifyTokenResponse prepareTokenResponse(Jws<Claims> claims) {
         String userId = claims.getPayload().getSubject();
-        String roleId = (String) claims.getPayload().get(JWT_AUD_KEY);
-        String device = (String) claims.getPayload().get(JWT_DEVICE_KEY);
-        boolean isValid = true;
-        return new VerifyTokenResponse(userId, roleId, device, isValid);
+        String roleId = extractClaimAsString(claims.getPayload().get(JWT_AUD_KEY));
+        String device = extractClaimAsString(claims.getPayload().get(JWT_DEVICE_KEY));
+        return new VerifyTokenResponse(userId, roleId, device, HttpStatus.OK.value(), TOKEN_VERIFIED_SUCCESSFULLY_MSG);
+    }
+
+    private static String extractClaimAsString(Object claim) {
+        return switch (claim) {
+            case null -> null;
+            case String str -> str;
+            case Collection<?> collection when !collection.isEmpty() ->
+                    collection.iterator().next().toString(); // return first value
+
+            default -> claim.toString();
+        };
     }
 
     private Jws<Claims> validate(String token) {

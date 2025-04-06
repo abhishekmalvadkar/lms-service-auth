@@ -240,9 +240,8 @@ public class AuthService {
         return this.userRepo.findByOtpAndEmailAndDeleteFlagFalse(verifyOtpRequest.otp(), verifyOtpRequest.email());
     }
 
-    public CustomResModel verifyToken(VerifyTokenRequest verifyTokenRequest){
-        VerifyTokenResponse verifyTokenResponse = tokenHelper.verify(verifyTokenRequest.token());
-        return  CustomResModel.success(verifyTokenResponse, TOKEN_VERIFIED_SUCCESSFULLY_MSG);
+    public VerifyTokenResponse verifyToken(VerifyTokenRequest verifyTokenRequest){
+        return tokenHelper.verify(verifyTokenRequest.token());
     }
 }
 
